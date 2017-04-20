@@ -54,18 +54,22 @@ int RegisterRead(char *ptr, int offset) {
 	return * (int *) (ptr + offset);
 }
 
+void RegisterWrite(char *ptr, int offset, int value) {
+	* (int *) (ptr + offset) = value;
+}
+
 void SetLedNumber(char *ptr, int value) {
-RegisterWrite(ptr, gpio_led1_offset, value % 2);
-RegisterWrite(ptr, gpio_led2_offset, (value / 2) % 2);
-RegisterWrite(ptr, gpio_led3_offset, (value / 4) % 2);
-RegisterWrite(ptr, gpio_led4_offset, (value / 8) % 2);
-RegisterWrite(ptr, gpio_led5_offset, (value / 16) % 2);
-RegisterWrite(ptr, gpio_led6_offset, (value / 32) % 2);
-RegisterWrite(ptr, gpio_led7_offset, (value / 64) % 2);
-RegisterWrite(ptr, gpio_led8_offset, (value / 128) % 2);
+	RegisterWrite(ptr, gpio_led1_offset, value % 2);
+	RegisterWrite(ptr, gpio_led2_offset, (value / 2) % 2);
+	RegisterWrite(ptr, gpio_led3_offset, (value / 4) % 2);
+	RegisterWrite(ptr, gpio_led4_offset, (value / 8) % 2);
+	RegisterWrite(ptr, gpio_led5_offset, (value / 16) % 2);
+	RegisterWrite(ptr, gpio_led6_offset, (value / 32) % 2);
+	RegisterWrite(ptr, gpio_led7_offset, (value / 64) % 2);
+	RegisterWrite(ptr, gpio_led8_offset, (value / 128) % 2);
 } 
 
-int compute(int op, xx, yy) {
+int compute(int op, int xx, int yy) {
 	int answer = 0;
 	switch(op) {
 		case 0:
@@ -92,66 +96,108 @@ int compute(int op, xx, yy) {
 	return answer;
 }
 
+int ReadSwitches(char *ptr) {
+	int sum = 0;
+	if (RegisterRead(ptr, gpio_sw1_offset)) {
+		sum += 1;
+	}
+	if (RegisterRead(ptr, gpio_sw2_offset)) {
+		sum += 2;
+	}
 
-			
+	if (RegisterRead(ptr, gpio_sw3_offset)) {
+		sum += 4;
+	}
+
+	if (RegisterRead(ptr, gpio_sw4_offset)) {
+		sum += 8;
+	}
+	if (RegisterRead(ptr, gpio_sw5_offset)) {
+		sum += 16;
+	}
+	if (RegisterRead(ptr, gpio_sw6_offset)) {
+		sum += 32;
+	}
+	if (RegisterRead(ptr, gpio_sw7_offset)) {
+		sum += 64;
+	}
+	if (RegisterRead(ptr, gpio_sw8_offset)) {
+		sum += 128;
+	}
+
+	return sum;
+}
+
 int main() {
 
 	// Initialize
 	int fd;
 	char *ptr = Initialize(&fd);
 	// Check error
-	if (ptr == MAP_FAILED)
-	{
+	if (ptr == MAP_FAILED) {
 		perror("Mapping I/O memory failed - Did you run with 'sudo'?\n");
 		return -1;
 	}
 	int num = 0;
 	int op = -1;
 	int num2 = 0;
-
-	while(1) {
-		int not_pressed = 1;
-		cout<<"Move switches to represent desired binary number\n";
-		cout<<"When ready press center button\n";
-		while(RegisterRead(ptr, gpio_pbtnc_offset)) {
-		}
-		num = readswitches();
-		cout<<"Number = "<<num<<"\n";
-		cout<<"Select which operation to preform:\n";
-		cout<<"Left Button: Addition\n";
-		cout<<"Right Button: Subtraction\n";
-		cout<<"Up Button: Multiplication\n";
-		cout<<"Down Button: Division\n";
-		while(not_pressed) {
-			if (RegisterRead(ptr, gpio_pbtnl_offset)) {
-				op = 0;
-				not_pressed = 0;
+	cout<<"This is a simple calculator operated by the ZedBoard.\n";
+	cout<<"It can perform the operations of addition, subtraction, multiplication, and division.\n";
+	cout<<"The max number is 255, if any operation results in an integer greater than that, overflow will occur.\n";
+	cout<<"If subtraction results in a number less than zero, the absolute value will be taken.\n";
+	cout<<"All division is integer division, meaning if the result of dividing two numbers is a decimal, it\n";
+	cout<<"will be rounded down to the nearest integer.\n";
+		while(1) {
+			int not_pressed = 1;
+			cout<<"Move ZedBoard switches to represent desired binary number\n";
+			cout<<"When ready press center button\n";
+			while(RegisterRead(ptr, gpio_pbtnc_offset)) {
 			}
-			if (RegisterRead(ptr, gpio_pbtnr_offset)) {
-				op = 1;
-				not_pressed = 0;
+			num = ReadSwitches(ptr);
+			cout<<"First Number = "<<num<<"\n";
+			cout<<"Select which operation to preform:\n";
+			cout<<"Left Button: Addition\n";
+			cout<<"Right Button: Subtraction\n";
+			cout<<"Up Button: Multiplication\n";
+			cout<<"Down Button: Division\n";
+			while(not_pressed) {
+				if (RegisterRead(ptr, gpio_pbtnl_offset)) {
+					op = 0;
+					not_pressed = 0;
+					cout<<"Operation is addition\n";
+				}
+				if (RegisterRead(ptr, gpio_pbtnr_offset)) {
+					op = 1;
+					not_pressed = 0;
+					cout<<"Operation is subtraction\n";
+				}	       
+				if (RegisterRead(ptr, gpio_pbtnu_offset)) {
+					op = 2;
+					not_pressed = 0;
+					cout<<"Operation is multiplication\n";
+				}	       
+				if (RegisterRead(ptr, gpio_pbtnd_offset)) {
+					op = 3;
+					not_pressed = 0;
+					cout<<"Operation is division\n";
+				}	       
 			}	       
-			if (RegisterRead(ptr, gpio_pbtnu_offset)) {
-				op = 2;
-				not_pressed = 0;
-			}	       
-			if (RegisterRead(ptr, gpio_pbtnd_offset)) {
-				op = 3;
-				not_pressed = 0;
-			}	       
-		}	       
-		cout<<"Move switches to represent desired binary number\n";	
-		cout<<"When ready press center button\n";
-		while(RegisterRead(ptr, gpio_pbtnc_offset)) {
+			cout<<"Move switches to represent desired binary number\n";	
+			cout<<"When ready press center button\n";
+			while(RegisterRead(ptr, gpio_pbtnc_offset)) {
+			}
+			num2 = ReadSwitches(ptr);
+			cout<<"Second Number = "<<num2<<"\n";
+			int answer = compute(op, num, num2);
+			if (answer == -1) {
+				perror("Exit");
+				return -1;
+
+			}
+
+			SetLedNumber(ptr, answer);
+			cout<<"Answer = "<<answer<<"\n";
+
 		}
-		num2 = readswitches();
-		cout<<"Number = "<<num2<<"\n";
-		if compute(op, num, num2) == -1 {
-			perror("Exit");
-			return -1;
-
-
-
-	}
-	return 0
+	return 0;
 }
