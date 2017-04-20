@@ -35,8 +35,7 @@ const int gpio_pbtnc_offset = 0x17C; // Offset for center push button
 
 using namespace std;
 
-char *Initialize(int *fd)
-{
+char *Initialize(int *fd) {
 	*fd = open( "/dev/mem", O_RDWR);
 	return (char *) mmap(
 			NULL,
@@ -46,25 +45,113 @@ char *Initialize(int *fd)
 			*fd,
 			gpio_address);
 }
-void Finalize(char *ptr, int fd)
-{
-munmap(ptr, gpio_size);
-close(fd);
+void Finalize(char *ptr, int fd) {
+	munmap(ptr, gpio_size);
+	close(fd);
 }
 
+int RegisterRead(char *ptr, int offset) {
+	return * (int *) (ptr + offset);
+}
+
+void SetLedNumber(char *ptr, int value) {
+RegisterWrite(ptr, gpio_led1_offset, value % 2);
+RegisterWrite(ptr, gpio_led2_offset, (value / 2) % 2);
+RegisterWrite(ptr, gpio_led3_offset, (value / 4) % 2);
+RegisterWrite(ptr, gpio_led4_offset, (value / 8) % 2);
+RegisterWrite(ptr, gpio_led5_offset, (value / 16) % 2);
+RegisterWrite(ptr, gpio_led6_offset, (value / 32) % 2);
+RegisterWrite(ptr, gpio_led7_offset, (value / 64) % 2);
+RegisterWrite(ptr, gpio_led8_offset, (value / 128) % 2);
+} 
+
+int compute(int op, xx, yy) {
+	int answer = 0;
+	switch(op) {
+		case 0:
+			answer = xx + yy;
+			break;
+		case 1:
+			answer = xx - yy;
+			break;
+		case 2:
+			answer = xx * yy;
+			break;
+		case 3:
+			answer = xx / yy;
+			break;
+		default:
+			perror("Not a valid operation...Exiting now...\n");
+			return -1;
+	}
+
+	if (answer < 0) {
+		answer *= -1;
+	}
+
+	return answer;
+}
+
+
+			
 int main() {
 
-// Initialize
-int fd;
-char *ptr = Initialize(&fd);
-// Check error
-if (ptr == MAP_FAILED)
-{
-perror("Mapping I/O memory failed - Did you run with 'sudo'?\n");
-return -1;
-}
+	// Initialize
+	int fd;
+	char *ptr = Initialize(&fd);
+	// Check error
+	if (ptr == MAP_FAILED)
+	{
+		perror("Mapping I/O memory failed - Did you run with 'sudo'?\n");
+		return -1;
+	}
+	int num = 0;
+	int op = -1;
+	int num2 = 0;
+
+	while(1) {
+		int not_pressed = 1;
+		cout<<"Move switches to represent desired binary number\n";
+		cout<<"When ready press center button\n";
+		while(RegisterRead(ptr, gpio_pbtnc_offset)) {
+		}
+		num = readswitches();
+		cout<<"Number = "<<num<<"\n";
+		cout<<"Select which operation to preform:\n";
+		cout<<"Left Button: Addition\n";
+		cout<<"Right Button: Subtraction\n";
+		cout<<"Up Button: Multiplication\n";
+		cout<<"Down Button: Division\n";
+		while(not_pressed) {
+			if (RegisterRead(ptr, gpio_pbtnl_offset)) {
+				op = 0;
+				not_pressed = 0;
+			}
+			if (RegisterRead(ptr, gpio_pbtnr_offset)) {
+				op = 1;
+				not_pressed = 0;
+			}	       
+			if (RegisterRead(ptr, gpio_pbtnu_offset)) {
+				op = 2;
+				not_pressed = 0;
+			}	       
+			if (RegisterRead(ptr, gpio_pbtnd_offset)) {
+				op = 3;
+				not_pressed = 0;
+			}	       
+		}	       
+		cout<<"Move switches to represent desired binary number\n";	
+		cout<<"When ready press center button\n";
+		while(RegisterRead(ptr, gpio_pbtnc_offset)) {
+		}
+		num2 = readswitches();
+		cout<<"Number = "<<num2<<"\n";
+		if compute(op, num, num2) == -1 {
+			perror("Exit");
+			return -1;
 
 
 
+	}
 	return 0
 }
