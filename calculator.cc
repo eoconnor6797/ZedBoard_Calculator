@@ -85,7 +85,6 @@ int compute(int op, int xx, int yy) {
 			answer = xx / yy;
 			break;
 		default:
-			perror("Not a valid operation...Exiting now...\n");
 			return -1;
 	}
 
@@ -135,27 +134,30 @@ int main() {
 	char *ptr = Initialize(&fd);
 	// Check error
 	if (ptr == MAP_FAILED) {
-		perror("Mapping I/O memory failed - Did you run with 'sudo'?\n");
+		cout<<"Mapping I/O memory failed - Did you run with 'sudo'?\n";
 		return -1;
 	}
 	int num = 0;
 	int op = -1;
 	int num2 = 0;
+
+	cout<<"\n\n";
 	cout<<"This is a simple calculator operated by the ZedBoard.\n";
-	cout<<"It can perform the operations of addition, subtraction, multiplication, and division.\n";
-	cout<<"The max number is 255, if any operation results in an integer greater than that, overflow will occur.\n";
-	cout<<"If subtraction results in a number less than zero, the absolute value will be taken.\n";
-	cout<<"All division is integer division, meaning if the result of dividing two numbers is a decimal, it\n";
-	cout<<"will be rounded down to the nearest integer.\n";
+	cout<<"It can perform the operations of addition, subtraction, multiplication,"; 
+	cout<<"\nand division.\n";
+	cout<<"\nThe max number is 255, if any operation results in an integer greater than that, overflow will occur.\n";
+	cout<<"\nIf subtraction results in a number less than zero, the absolute value will be taken.\n";
+	cout<<"\nAll division is integer division, meaning if the result of dividing two numbers \n";
+	cout<<"is a decimal, it will be rounded down to the nearest integer.\n";
 		while(1) {
 			int not_pressed = 1;
-			cout<<"Move ZedBoard switches to represent desired binary number\n";
-			cout<<"When ready press center button\n";
-			while(RegisterRead(ptr, gpio_pbtnc_offset)) {
+			cout<<"\nMove ZedBoard switches to represent desired binary number\n";
+			cout<<"\nWhen ready press center button\n";
+			while(!RegisterRead(ptr, gpio_pbtnc_offset)) {
 			}
 			num = ReadSwitches(ptr);
 			cout<<"First Number = "<<num<<"\n";
-			cout<<"Select which operation to preform:\n";
+			cout<<"\nSelect which operation to preform:\n";
 			cout<<"Left Button: Addition\n";
 			cout<<"Right Button: Subtraction\n";
 			cout<<"Up Button: Multiplication\n";
@@ -164,39 +166,39 @@ int main() {
 				if (RegisterRead(ptr, gpio_pbtnl_offset)) {
 					op = 0;
 					not_pressed = 0;
-					cout<<"Operation is addition\n";
+					cout<<"\nOperation is addition\n";
 				}
 				if (RegisterRead(ptr, gpio_pbtnr_offset)) {
 					op = 1;
 					not_pressed = 0;
-					cout<<"Operation is subtraction\n";
+					cout<<"\nOperation is subtraction\n";
 				}	       
 				if (RegisterRead(ptr, gpio_pbtnu_offset)) {
 					op = 2;
 					not_pressed = 0;
-					cout<<"Operation is multiplication\n";
+					cout<<"\nOperation is multiplication\n";
 				}	       
 				if (RegisterRead(ptr, gpio_pbtnd_offset)) {
 					op = 3;
 					not_pressed = 0;
-					cout<<"Operation is division\n";
+					cout<<"\nOperation is division\n";
 				}	       
 			}	       
-			cout<<"Move switches to represent desired binary number\n";	
-			cout<<"When ready press center button\n";
-			while(RegisterRead(ptr, gpio_pbtnc_offset)) {
+			cout<<"\nMove switches to represent desired binary number\n";	
+			cout<<"\nWhen ready press up button\n";
+			while(!RegisterRead(ptr, gpio_pbtnu_offset)) {
 			}
 			num2 = ReadSwitches(ptr);
 			cout<<"Second Number = "<<num2<<"\n";
 			int answer = compute(op, num, num2);
 			if (answer == -1) {
-				perror("Exit");
+				cout<<"Not a valid operation....Exiting";
 				return -1;
 
 			}
 
 			SetLedNumber(ptr, answer);
-			cout<<"Answer = "<<answer<<"\n";
+			cout<<"\nAnswer = "<<answer<<"\n";
 
 		}
 	return 0;
